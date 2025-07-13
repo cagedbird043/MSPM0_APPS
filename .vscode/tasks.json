@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Project",
+            "type": "shell",
+            "command": "cmake --build ${workspaceFolder}/build --config Release --target all",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Flash Device (OpenOCD)",
+            "type": "shell",
+            "command": "openocd -f interface/stlink.cfg -f target/ti_mspm0.cfg -c \"program ${workspaceFolder}/build/${workspaceFolderBasename}.hex verify reset exit\"",
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": "Build Project",
+            "detail": "Adjust OpenOCD config files (interface/stlink.cfg and target/ti_mspm0.cfg) as needed for your specific probe and chip."
+        },
+        {
+            "label": "Flash Device (TI DSLite)",
+            "type": "shell",
+            "command": "${env:HOME}/ti/mspm0_sdk_2_05_01_00/tools/dslite/dslite.sh flash -c ${workspaceFolder}/.vscode/MSPM0_LP_PORT.xml -f ${workspaceFolder}/build/${workspaceFolderBasename}.bin",
+            "problemMatcher": [],
+            "group": "build",
+            "dependsOn": "Build Project",
+            "detail": "Requires MSPM0_LP_PORT.xml in .vscode/ and correct SDK path."
+        }
+    ]
+}

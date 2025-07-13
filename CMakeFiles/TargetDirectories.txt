@@ -1,0 +1,3 @@
+/home/cagedbird/Projects/MSPM0_APPS/CMakeFiles/MSPM0G3507App.elf.dir
+/home/cagedbird/Projects/MSPM0_APPS/CMakeFiles/edit_cache.dir
+/home/cagedbird/Projects/MSPM0_APPS/CMakeFiles/rebuild_cache.dir

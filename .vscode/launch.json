@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Cortex-Debug (OpenOCD)",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "device": "MSPM0G3507", // 直接指定G3507
+            "configFiles": [
+                "interface/stlink.cfg", // 你的调试器接口配置，例如 "interface/jlink.cfg"
+                "target/ti_mspm0.cfg"   // 确保你的OpenOCD有此文件
+            ],
+            "svdFile": "${command:cmake.getCacheValue:CORTEX_DEBUG_SVD_FILE}", // 从CMake缓存获取SVD文件
+            "openOCDPath": "openocd", // 确保在PATH中，否则提供完整路径
+            "preLaunchTask": "Build Project",
+            "toolchainPath": "arm-none-eabi-gdb",
+            "armToolchainPath": "arm-none-eabi-gdb"
+        }
+    ]
+}
