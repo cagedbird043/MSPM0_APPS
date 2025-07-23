@@ -73,27 +73,25 @@ extern "C" {
 #define POWER_STARTUP_DELAY                                                (16)
 
 
-
 #define CPUCLK_FREQ                                                     32000000
 
 
 
+/* Defines for TIMER_0 */
+#define TIMER_0_INST                                                     (TIMA0)
+#define TIMER_0_INST_IRQHandler                                 TIMA0_IRQHandler
+#define TIMER_0_INST_INT_IRQN                                   (TIMA0_INT_IRQn)
+#define TIMER_0_INST_LOAD_VALUE                                         (62499U)
 
-/* Port definition for Pin Group GPIO_LEDS */
-#define GPIO_LEDS_PORT                                                   (GPIOB)
 
-/* Defines for USER_LED_1: GPIOB.22 with pinCMx 50 on package pin 21 */
-#define GPIO_LEDS_USER_LED_1_PIN                                (DL_GPIO_PIN_22)
-#define GPIO_LEDS_USER_LED_1_IOMUX                               (IOMUX_PINCM50)
-/* Defines for USER_LED_2: GPIOB.26 with pinCMx 57 on package pin 28 */
-#define GPIO_LEDS_USER_LED_2_PIN                                (DL_GPIO_PIN_26)
-#define GPIO_LEDS_USER_LED_2_IOMUX                               (IOMUX_PINCM57)
-/* Defines for USER_LED_3: GPIOB.27 with pinCMx 58 on package pin 29 */
-#define GPIO_LEDS_USER_LED_3_PIN                                (DL_GPIO_PIN_27)
-#define GPIO_LEDS_USER_LED_3_IOMUX                               (IOMUX_PINCM58)
-/* Defines for USER_TEST: GPIOB.16 with pinCMx 33 on package pin 4 */
-#define GPIO_LEDS_USER_TEST_PIN                                 (DL_GPIO_PIN_16)
-#define GPIO_LEDS_USER_TEST_IOMUX                                (IOMUX_PINCM33)
+
+
+/* Port definition for Pin Group GPIO_GRP_0 */
+#define GPIO_GRP_0_PORT                                                  (GPIOA)
+
+/* Defines for USER_LED_1: GPIOA.0 with pinCMx 1 on package pin 33 */
+#define GPIO_GRP_0_USER_LED_1_PIN                                (DL_GPIO_PIN_0)
+#define GPIO_GRP_0_USER_LED_1_IOMUX                               (IOMUX_PINCM1)
 
 /* clang-format on */
 
@@ -101,8 +99,11 @@ void SYSCFG_DL_init(void);
 void SYSCFG_DL_initPower(void);
 void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
+void SYSCFG_DL_TIMER_0_init(void);
 
 
+bool SYSCFG_DL_saveConfiguration(void);
+bool SYSCFG_DL_restoreConfiguration(void);
 
 #ifdef __cplusplus
 }

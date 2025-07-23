@@ -1,5 +1,27 @@
 {
     "files.associations": {
-        "ti_msp_dl_config.h": "c"
+        "ti_msp_dl_config.h": "c",
+        "adc.h": "c",
+        "gpio.h": "c",
+        "dl_crc.h": "c",
+        "dl_dac12.h": "c",
+        "dl_flashctl.h": "c",
+        "dl_opa.h": "c",
+        "dl_gpio.h": "c",
+        "dl_wwdt.h": "c",
+        "dl_i2c.h": "c"
+    },
+    "cmake.configureSettings": {
+        "TI_SDK_ROOT": "/root/SDKs/mspm0_sdk_2_05_01_00", // 每个人可以修改为自己的路径
+        "SYSCONFIG_CLI_PATH": "/root/Programs/sysconfig_1.24.1/sysconfig_cli.sh"
+    },
+    "cmake.debugConfig": {
+        // "name" 必须与 launch.json 中你想要默认使用的配置的 "name" 完全一致
+        "name": "Debug (XDS110 + OpenOCD)"
+    },
+    "clangd.restartAfterCrash": true,
+    "clangd.onConfigChanged": "restart",
+    "files.watcherExclude": {
+        "**/compile_commands.json": false
     }
 }

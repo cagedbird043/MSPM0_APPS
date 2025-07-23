@@ -2,29 +2,39 @@
     "version": "2.0.0",
     "tasks": [
         {
+            // ================================================================
+            // 任务一：构建项目 (Build Project)
+            // **核心修改：不再使用 "type": "shell"，而是使用 "type": "cmake"**
+            // ================================================================
             "label": "Build Project",
-            "type": "shell",
-            "command": "cmake --build ${workspaceFolder}/build --config Release --target all",
-            "group": { "kind": "build", "isDefault": true },
-            "problemMatcher": "$gcc"
+            "type": "cmake",          // <--- 使用 CMake 原生任务类型
+            "command": "build",       // <--- 告诉 CMake 任务，执行 "build" 动作
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "使用 CMake Tools 插件原生接口构建整个项目。"
         },
         {
-            "label": "Flash Device (OpenOCD)",
+            // ================================================================
+            // 任务二：烧录并运行 (Flash & Run)
+            // 这个任务保持不变，因为它需要执行 shell 命令 openocd。
+            // ================================================================
+            "label": "Flash & Run (XDS110 + OpenOCD)",
             "type": "shell",
-            "command": "openocd -f interface/stlink.cfg -f target/ti_mspm0.cfg -c \"program ${workspaceFolder}/build/${workspaceFolderBasename}.hex verify reset exit\"",
+            "command": "openocd",
+            "args": [
+                "-f", "interface/xds110.cfg",
+                "-f", "${workspaceFolder}/ti_mspm0.cfg",
+                "-c", "adapter speed 4000", // 设置速度为 4000 kHz (4 MHz)
+                "-c", "program ${command:cmake.launchTargetPath} reset exit"
+            ],
+            // **重要：这个依赖关系依然有效！**
+            // VS Code 会先执行名为 "Build Project" 的任务，无论它是什么类型。
+            "dependsOn": "Build Project", 
             "problemMatcher": [],
-            "group": "build",
-            "dependsOn": "Build Project",
-            "detail": "Adjust OpenOCD config files (interface/stlink.cfg and target/ti_mspm0.cfg) as needed for your specific probe and chip."
-        },
-        {
-            "label": "Flash Device (TI DSLite)",
-            "type": "shell",
-            "command": "${env:HOME}/ti/mspm0_sdk_2_05_01_00/tools/dslite/dslite.sh flash -c ${workspaceFolder}/.vscode/MSPM0_LP_PORT.xml -f ${workspaceFolder}/build/${workspaceFolderBasename}.bin",
-            "problemMatcher": [],
-            "group": "build",
-            "dependsOn": "Build Project",
-            "detail": "Requires MSPM0_LP_PORT.xml in .vscode/ and correct SDK path."
+            "detail": "使用 OpenOCD 和 XDS110 烧录固件，然后让芯片自由运行。"
         }
     ]
 }

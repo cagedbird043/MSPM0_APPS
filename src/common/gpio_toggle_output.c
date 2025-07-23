@@ -32,30 +32,49 @@
 
 #include "ti_msp_dl_config.h"
 
-/* This results in approximately 0.5s of delay assuming 32MHz CPU_CLK */
-#define DELAY (16000000)
+// 中断服务程序 (ISR) 和主循环 (main loop) 之间的通信标志
+volatile bool gTimerUpdate = false;
 
 int main(void)
 {
-    /* Power on GPIO, initialize pins as digital outputs */
+    // SYSCFG_DL_init() 会初始化所有在 SysConfig 中配置的外设
     SYSCFG_DL_init();
 
-    /* Default: LED1 and LED3 ON, LED2 OFF */
-    DL_GPIO_clearPins(GPIO_LEDS_PORT, GPIO_LEDS_USER_LED_2_PIN);
-    DL_GPIO_setPins(GPIO_LEDS_PORT, GPIO_LEDS_USER_LED_1_PIN |
-                                        GPIO_LEDS_USER_LED_3_PIN |
-                                        GPIO_LEDS_USER_TEST_PIN);
+    // 手动启动定时器
+    DL_TimerG_startCounter(TIMER_0_INST);
 
-    while (1)
-    {
-        /*
-         * Call togglePins API to flip the current value of LEDs 1-3. This
-         * API causes the corresponding HW bits to be flipped by the GPIO HW
-         * without need for additional R-M-W cycles by the processor.
-         */
-        delay_cycles(DELAY);
-        DL_GPIO_togglePins(GPIO_LEDS_PORT,
-                           GPIO_LEDS_USER_LED_1_PIN | GPIO_LEDS_USER_LED_2_PIN |
-                               GPIO_LEDS_USER_LED_3_PIN | GPIO_LEDS_USER_TEST_PIN);
+    // 启用 TIMG0 的中断
+    NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
+
+    // 初始化标志位
+    gTimerUpdate = false;
+
+    while (1) {
+        // 高效地等待中断的发生
+        while (gTimerUpdate == false) {
+            // 在此期间 CPU 是空闲的
+        }
+
+        // 定时器中断已发生，清除标志位
+        gTimerUpdate = false;
+
+        // 翻转 USER_LED_1 的电平
+        DL_GPIO_togglePins(GPIO_GRP_0_PORT, GPIO_GRP_0_USER_LED_1_PIN);
+    }
+}
+
+// =============================================================================
+// 定时器中断服务程序 (ISR)
+// **重要：函数名必须与 ti_msp_dl_config.h 中的定义完全一致！**
+// =============================================================================
+void TIMER_0_INST_IRQHandler(void)
+{
+    switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
+    case DL_TIMER_IIDX_ZERO:
+        // 500ms 时间到，设置标志位，通知主循环
+        gTimerUpdate = true;
+        break;
+    default:
+        break;
     }
 }

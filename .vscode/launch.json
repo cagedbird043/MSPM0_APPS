@@ -2,22 +2,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Cortex-Debug (OpenOCD)",
+            "name": "Debug (XDS110 + OpenOCD)",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/build/${workspaceFolderBasename}.elf",
+            "executable": "${command:cmake.launchTargetPath}",
             "request": "launch",
             "type": "cortex-debug",
+            "runToEntryPoint": "main",
             "servertype": "openocd",
-            "device": "MSPM0G3507", // 直接指定G3507
+
+            // ================================================================
+            // **核心修改在这里！**
+            // 我们不再使用 openocd.cfg 这个中间文件。
+            // 直接把你在命令行中成功验证过的两个配置文件列在这里。
+            // ================================================================
             "configFiles": [
-                "interface/stlink.cfg", // 你的调试器接口配置，例如 "interface/jlink.cfg"
-                "target/ti_mspm0.cfg"   // 确保你的OpenOCD有此文件
+                // 第一个 -f 参数：指定接口
+                "interface/xds110.cfg",
+                
+                // 第二个 -f 参数：指定目标芯片 (使用我们项目目录下的文件)
+                "${workspaceFolder}/ti_mspm0.cfg"
             ],
-            "svdFile": "${command:cmake.getCacheValue:CORTEX_DEBUG_SVD_FILE}", // 从CMake缓存获取SVD文件
-            "openOCDPath": "openocd", // 确保在PATH中，否则提供完整路径
-            "preLaunchTask": "Build Project",
-            "toolchainPath": "arm-none-eabi-gdb",
-            "armToolchainPath": "arm-none-eabi-gdb"
+            
+            // 为了解决那个速度警告，我们可以在这里直接添加 OpenOCD 命令
+            "serverArgs": [
+                "-c", "adapter speed 4000"
+            ],
+
+            "svdFile": "${cmake:CORTEX_DEBUG_SVD_FILE}",
+            "preLaunchTask": "Build Project"
         }
     ]
 }
