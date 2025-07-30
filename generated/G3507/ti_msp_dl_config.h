@@ -77,21 +77,33 @@ extern "C" {
 
 
 
-/* Defines for TIMER_0 */
-#define TIMER_0_INST                                                     (TIMA0)
-#define TIMER_0_INST_IRQHandler                                 TIMA0_IRQHandler
-#define TIMER_0_INST_INT_IRQN                                   (TIMA0_INT_IRQn)
-#define TIMER_0_INST_LOAD_VALUE                                         (62499U)
+/* Defines for PWM_TURRET */
+#define PWM_TURRET_INST                                                    TIMA0
+#define PWM_TURRET_INST_IRQHandler                              TIMA0_IRQHandler
+#define PWM_TURRET_INST_INT_IRQN                                (TIMA0_INT_IRQn)
+#define PWM_TURRET_INST_CLK_FREQ                                          500000
+/* GPIO defines for channel 0 */
+#define GPIO_PWM_TURRET_C0_PORT                                            GPIOB
+#define GPIO_PWM_TURRET_C0_PIN                                     DL_GPIO_PIN_8
+#define GPIO_PWM_TURRET_C0_IOMUX                                 (IOMUX_PINCM25)
+#define GPIO_PWM_TURRET_C0_IOMUX_FUNC                IOMUX_PINCM25_PF_TIMA0_CCP0
+#define GPIO_PWM_TURRET_C0_IDX                               DL_TIMER_CC_0_INDEX
+/* GPIO defines for channel 1 */
+#define GPIO_PWM_TURRET_C1_PORT                                            GPIOB
+#define GPIO_PWM_TURRET_C1_PIN                                    DL_GPIO_PIN_12
+#define GPIO_PWM_TURRET_C1_IOMUX                                 (IOMUX_PINCM29)
+#define GPIO_PWM_TURRET_C1_IOMUX_FUNC                IOMUX_PINCM29_PF_TIMA0_CCP1
+#define GPIO_PWM_TURRET_C1_IDX                               DL_TIMER_CC_1_INDEX
 
 
 
+/* Defines for TIMER_MOTION */
+#define TIMER_MOTION_INST                                                (TIMA1)
+#define TIMER_MOTION_INST_IRQHandler                            TIMA1_IRQHandler
+#define TIMER_MOTION_INST_INT_IRQN                              (TIMA1_INT_IRQn)
+#define TIMER_MOTION_INST_LOAD_VALUE                                     (9999U)
 
-/* Port definition for Pin Group GPIO_GRP_0 */
-#define GPIO_GRP_0_PORT                                                  (GPIOA)
 
-/* Defines for USER_LED_1: GPIOA.0 with pinCMx 1 on package pin 33 */
-#define GPIO_GRP_0_USER_LED_1_PIN                                (DL_GPIO_PIN_0)
-#define GPIO_GRP_0_USER_LED_1_IOMUX                               (IOMUX_PINCM1)
 
 /* clang-format on */
 
@@ -99,8 +111,8 @@ void SYSCFG_DL_init(void);
 void SYSCFG_DL_initPower(void);
 void SYSCFG_DL_GPIO_init(void);
 void SYSCFG_DL_SYSCTL_init(void);
-void SYSCFG_DL_TIMER_0_init(void);
-
+void SYSCFG_DL_PWM_TURRET_init(void);
+void SYSCFG_DL_TIMER_MOTION_init(void);
 
 bool SYSCFG_DL_saveConfiguration(void);
 bool SYSCFG_DL_restoreConfiguration(void);

@@ -1,80 +1,110 @@
-/*
- * Copyright (c) 2023, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 #include "ti_msp_dl_config.h"
 
-// 中断服务程序 (ISR) 和主循环 (main loop) 之间的通信标志
-volatile bool gTimerUpdate = false;
+// SysTick延时函数部分，虽然在这个测试程序里用不到，但保留着无害
+volatile uint32_t g_systick_delay_counter = 0;
+void SysTick_Handler(void)
+{
+    if (g_systick_delay_counter > 0)
+        g_systick_delay_counter--;
+}
+void delay_ms(uint32_t ms)
+{
+    g_systick_delay_counter = ms;
+    while (g_systick_delay_counter > 0)
+        ;
+}
+void systick_init(void)
+{
+#define SYSCLK_FREQUENCY 32000000
+    uint32_t ticks = SYSCLK_FREQUENCY / 1000;
+    SysTick->LOAD = ticks - 1;
+    SysTick->VAL = 0;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+}
+
+// =================================================================
+// 舵机控制部分
+// =================================================================
+
+// --- 俯仰舵机 (Pitch, 180度, 连接到 PB12, 由 Channel 1 控制) ---
+#define PITCH_PULSE_LEFT (600)
+#define PITCH_PULSE_CENTER (1550)
+#define PITCH_PULSE_RIGHT (2530)
+#define PITCH_SERVO_CHANNEL (DL_TIMER_CC_1_INDEX) // 明确指定通道1
+
+void set_pitch_angle(uint8_t angle) // 0-180
+{
+    uint16_t pulse;
+    if (angle > 180)
+        angle = 180;
+
+    if (angle <= 90) {
+        pulse = PITCH_PULSE_LEFT + (uint16_t)(((float)(PITCH_PULSE_CENTER - PITCH_PULSE_LEFT) * angle) / 90.0f);
+    } else {
+        pulse = PITCH_PULSE_CENTER + (uint16_t)(((float)(PITCH_PULSE_RIGHT - PITCH_PULSE_CENTER) * (angle - 90)) / 90.0f);
+    }
+    // 假设你的PWM实例名叫 PWM_TURRET (炮台)
+    DL_Timer_setCaptureCompareValue(PWM_TURRET_INST, pulse, PITCH_SERVO_CHANNEL);
+}
+
+// --- 方位舵机 (Yaw, 270度, 连接到 PB8, 由 Channel 0 控制) ---
+// ▼▼▼ 你需要通过实验找到并填入这三个值 ▼▼▼
+#define YAW_PULSE_LEFT (500) // 假设值
+#define YAW_PULSE_CENTER (1520) // 假设值
+#define YAW_PULSE_RIGHT (2650) // 假设值
+// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+#define YAW_SERVO_CHANNEL (DL_TIMER_CC_0_INDEX) // 明确指定通道0
+
+void set_yaw_angle(uint16_t angle) // 0-270
+{
+    uint16_t pulse;
+    if (angle > 270)
+        angle = 270;
+
+    // 使用简单的线性映射，或者也可以用更精确的三点校准
+    pulse = YAW_PULSE_LEFT + (uint16_t)(((float)(YAW_PULSE_RIGHT - YAW_PULSE_LEFT) * angle) / 270.0f);
+
+    // 同样，假设PWM实例名叫 PWM_TURRET
+    DL_Timer_setCaptureCompareValue(PWM_TURRET_INST, pulse, YAW_SERVO_CHANNEL);
+}
+
+// =================================================================
+// 主函数 main() - 演示组合运动
+// =================================================================
 
 int main(void)
 {
-    // SYSCFG_DL_init() 会初始化所有在 SysConfig 中配置的外设
     SYSCFG_DL_init();
+    systick_init();
 
-    // 手动启动定时器
-    DL_TimerG_startCounter(TIMER_0_INST);
+    // 只需要启动一次总的定时器
+    // 假设你在SysConfig里给唯一的PWM实例起的名字是 PWM_TURRET
+    DL_Timer_startCounter(PWM_TURRET_INST);
 
-    // 启用 TIMG0 的中断
-    NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
-
-    // 初始化标志位
-    gTimerUpdate = false;
+    // 启动后，让炮台归位到“正前方，水平”姿态
+    set_yaw_angle(135); // 方位舵机的中心是135度
+    set_pitch_angle(90); // 俯仰舵机的中心是90度
+    delay_ms(1500);
 
     while (1) {
-        // 高效地等待中断的发生
-        while (gTimerUpdate == false) {
-            // 在此期间 CPU 是空闲的
+        // 让俯仰舵机上下摆动
+        for (uint8_t pitch_angle = 45; pitch_angle <= 135; pitch_angle += 5) {
+            set_pitch_angle(pitch_angle);
+            delay_ms(50);
+        }
+        for (uint8_t pitch_angle = 135; pitch_angle > 45; pitch_angle -= 5) {
+            set_pitch_angle(pitch_angle);
+            delay_ms(50);
         }
 
-        // 定时器中断已发生，清除标志位
-        gTimerUpdate = false;
-
-        // 翻转 USER_LED_1 的电平
-        DL_GPIO_togglePins(GPIO_GRP_0_PORT, GPIO_GRP_0_USER_LED_1_PIN);
-    }
-}
-
-// =============================================================================
-// 定时器中断服务程序 (ISR)
-// **重要：函数名必须与 ti_msp_dl_config.h 中的定义完全一致！**
-// =============================================================================
-void TIMER_0_INST_IRQHandler(void)
-{
-    switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
-    case DL_TIMER_IIDX_ZERO:
-        // 500ms 时间到，设置标志位，通知主循环
-        gTimerUpdate = true;
-        break;
-    default:
-        break;
+        // 让方位舵机左右摆动
+        for (uint16_t yaw_angle = 90; yaw_angle <= 180; yaw_angle += 5) {
+            set_yaw_angle(yaw_angle);
+            delay_ms(50);
+        }
+        for (uint16_t yaw_angle = 180; yaw_angle > 90; yaw_angle -= 5) {
+            set_yaw_angle(yaw_angle);
+            delay_ms(50);
+        }
     }
 }
